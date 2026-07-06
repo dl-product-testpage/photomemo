@@ -1,2 +1,1 @@
-{
-"name":"写真メモ","short_name":"写真メモ","start_url":"./写真メモ.html","display":"standalone","background_color":"#1a1a1a","theme_color":"#e53935","icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png"},{"src":"icon-512.png","sizes":"512x512","type":"image/png"}]}
+{"name":"写真メモ","short_name":"写真メモ","start_url":"./index.html","scope":"./","display":"standalone","background_color":"#1a1a1a","theme_color":"#e53935","icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png"},{"src":"icon-512.png","sizes":"512x512","type":"image/png"}]}

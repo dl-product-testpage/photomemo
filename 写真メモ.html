@@ -28,7 +28,7 @@
   #savedView p { margin:14px 0; font-size:15px; color:#ccc; text-align:center; }
 </style>
 
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#e53935">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -234,21 +234,56 @@ document.getElementById('undoBtn').onclick = () => {
 };
 
 // 保存：写真＋赤線＋赤文字コメントをそのまま1枚のPNGに
+// iPhoneのPWA/standaloneでは Blob URL を <img> に入れても表示されないことがあるため、
+// 画面表示用は DataURL を使い、ダウンロード用だけ Blob URL を使う。
 document.getElementById('saveBtn').onclick = async () => {
   if (!img) return;
   redraw(); // 最新状態を反映
-  const blob = await new Promise(r=>canvas.toBlob(r,'image/png'));
-const url = URL.createObjectURL(blob);
-  // 自動ダウンロードを試みる
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'photo-memo-' + Date.now() + '.png';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  // スマホ用：長押し保存ビューも表示
-  document.getElementById('savedImg').src = url;
-  document.getElementById('savedView').style.display = 'flex';
+
+  const savedImg = document.getElementById('savedImg');
+  const savedView = document.getElementById('savedView');
+  const filename = 'photo-memo-' + Date.now() + '.png';
+
+  try {
+    // iPhoneで確実にプレビュー表示しやすい形式
+    const dataUrl = canvas.toDataURL('image/png');
+    savedImg.src = dataUrl;
+    savedView.style.display = 'flex';
+
+    // Web Share APIが使える環境では「写真に保存」や共有先に渡しやすくする
+    if (navigator.canShare && navigator.share && canvas.toBlob) {
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        const file = new File([blob], filename, { type: 'image/png' });
+        if (navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({ files: [file], title: '写真メモ' });
+            return;
+          } catch (e) {
+            // ユーザーが共有をキャンセルした場合などは、下の表示だけ残す
+          }
+        }
+      }, 'image/png');
+    }
+
+    // PC/Androidなどでは従来通り自動ダウンロードも試みる
+    if (canvas.toBlob) {
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 30000);
+      }, 'image/png');
+    }
+  } catch (e) {
+    alert('画像の作成に失敗しました。写真サイズを少し小さくしてから再度お試しください。');
+    console.error(e);
+  }
 };
 
 document.getElementById('closeSaved').onclick = () => {
